@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: '${APP_NAME}'
+  name: '${RESOURCE_NAME}-sentinel'
+spec:
+  clusterIP: None
+  ports:
+    - port: ${SENTINEL_PORT}
+      targetPort: ${SENTINEL_PORT}
+      name: redis-sentinel
+  selector:
+    deployment: '${RESOURCE_NAME}-sentinel'

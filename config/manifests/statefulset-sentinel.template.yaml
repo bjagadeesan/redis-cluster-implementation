@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  labels:
+    app: '${APP_NAME}'
+  name: '${RESOURCE_NAME}-sentinel'
+spec:
+  serviceName: '${RESOURCE_NAME}-sentinel'
+  replicas: $REPLICAS
+  selector:
+    matchLabels:
+      deployment: '${RESOURCE_NAME}-sentinel'
+  template:
+    metadata:
+      labels:
+        app: '${APP_NAME}'
+        deployment: '${RESOURCE_NAME}-sentinel'
+    spec:
+      initContainers:
+        - name: config
+          image: '${CONTAINER_IMAGE}'
+          imagePullPolicy: Always
+          command: [ "sh" , "-c", "./sentinel-server.sh" ]
+          env:
+            - name: NAMESPACE
+              value: '${NAMESPACE}'
+            - name: RESOURCE_NAME
+              value: "${RESOURCE_NAME}"
+            - name: REDIS_SERVER_PORT
+              value: "${REDIS_SERVER_PORT}"
+            - name: SENTINEL_PORT
+              value: "${SENTINEL_PORT}"
+          volumeMounts:
+            - name: redis-config
+              mountPath: /usr/local/etc/redis/
+      containers:
+        - name: sentinel
+          image: '${CONTAINER_IMAGE}'
+          command: [ "redis-sentinel" ]
+          imagePullPolicy: Always
+          args: [ "/usr/local/etc/redis/sentinel.conf" ]
+          ports:
+            - containerPort: ${SENTINEL_PORT}
+              name: sentinel
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - '-c'
+                - >-
+                  #! /bin/bash
+                  "$(redis-cli -h 127.0.0.1 --user kube-user -a ping)" == "PONG"
+            failureThreshold: 3
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          livenessProbe:
+            failureThreshold: 3
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            successThreshold: 1
+            tcpSocket:
+              port: ${SENTINEL_PORT}
+            timeoutSeconds: 1
+          resources:
+            requests:
+              memory:  "128Mi"
+            limits:
+              memory:  "512Mi"
+          volumeMounts:
+            - name: redis-config
+              mountPath: /usr/local/etc/redis/
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: redis-config
+          emptyDir: { }
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage:  "100Mi"

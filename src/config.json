@@ -1,0 +1,20 @@
+{
+  "data": {
+    "REPLICA_USERNAME": "replica-user",
+    "REPLICA_PASSWORD": "replica-pass",
+
+    "SENTINEL_USERNAME": "sentinel-user",
+    "SENTINEL_PASSWORD": "sentinel-pass",
+
+    "SENTINEL_SYNC_USERNAME": "sentinel-user",
+    "SENTINEL_SYNC_PASSWORD": "sentinel-pass",
+
+    "ADMIN_PASSWORD": "admin",
+    "ADMIN_USERNAME": "admin",
+
+    "SERVICE_PASSWORD": "api_pass",
+    "SERVICE_USERNAME": "api_service",
+
+    "DEFAULT_USER_PASS": "default_pass1"
+  }
+}

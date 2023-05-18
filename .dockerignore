@@ -1,0 +1,16 @@
+!obj/Docker/empty/
+!obj/Docker/publish/*
+.dockerignore
+.git
+.gitattributes
+.gitignore
+Dockerfile
+Jenkinsfile
+Jenkinsfile.*
+tmp
+.vs
+.vscode
+*/bin
+*/obj
+node_modules
+.env

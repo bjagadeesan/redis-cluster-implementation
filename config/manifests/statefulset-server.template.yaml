@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  labels:
+    app: '${APP_NAME}'
+  name: '${RESOURCE_NAME}-server'
+spec:
+  serviceName: '${RESOURCE_NAME}-server'
+  replicas: ${REPLICAS}
+  selector:
+    matchLabels:
+      deployment: '${RESOURCE_NAME}-server'
+  template:
+    metadata:
+      labels:
+        app: '${APP_NAME}'
+        deployment: '${RESOURCE_NAME}-server'
+    spec:
+      initContainers:
+        - name: config
+          image: '${CONTAINER_IMAGE}'
+          imagePullPolicy: Always
+          command: [ "sh" , "-c", "./redis-server.sh" ]
+          env:
+            - name: NAMESPACE
+              value: '${NAMESPACE}'
+            - name: RESOURCE_NAME
+              value: "${RESOURCE_NAME}"
+            - name: REDIS_SERVER_PORT
+              value: "${REDIS_SERVER_PORT}"
+            - name: SENTINEL_PORT
+              value: "${SENTINEL_PORT}"
+          volumeMounts:
+            - name: redis-config
+              mountPath: /usr/local/etc/redis/
+      containers:
+        - name: redis
+          image: '${CONTAINER_IMAGE}'
+          imagePullPolicy: Always
+          command: [ "redis-server" ]
+          args: [ "/usr/local/etc/redis/redis.conf" ]
+          ports:
+            - containerPort: ${REDIS_SERVER_PORT}
+              name: redis
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - '-c'
+                - >-
+                  #! /bin/bash
+                  "$(redis-cli -h 127.0.0.1 --user kube-user -a ping)" == "PONG"
+            failureThreshold: 3
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          livenessProbe:
+            failureThreshold: 3
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            successThreshold: 1
+            tcpSocket:
+              port: ${REDIS_SERVER_PORT}
+            timeoutSeconds: 1
+          resources:
+            requests:
+              memory:  "128Mi"
+            limits:
+              memory:  "512Mi"
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: redis-config
+              mountPath: /usr/local/etc/redis/
+      volumes:
+        - name: redis-config
+          emptyDir: { }
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage:  "100Mi"

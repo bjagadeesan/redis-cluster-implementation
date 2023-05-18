@@ -1,0 +1,15 @@
+kind: Service
+apiVersion: v1
+metadata:
+  labels:
+    app: '${APP_NAME}'
+  name: '${RESOURCE_NAME}-server'
+spec:
+  ports:
+    - port: ${REDIS_SERVER_PORT}
+      protocol: TCP
+      targetPort: ${REDIS_SERVER_PORT}
+      name: 'redis-server'
+  clusterIP: None
+  selector:
+    deployment: '${RESOURCE_NAME}-server'
